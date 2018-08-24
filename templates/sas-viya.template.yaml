@@ -1538,6 +1538,8 @@ Resources:
                   - 'ec2:RunInstances'
                   - 'ec2:AttachVolume'
                   - 'ec2:CreateTags'
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                  - 'ec2:DescribeSecurityGroups'
                   - 'elasticloadbalancing:DescribeLoadBalancers'
                   - 'elasticloadbalancing:DeleteLoadBalancerListeners'
                   - 'elasticloadbalancing:CreateLoadBalancerListeners'
@@ -1758,6 +1760,21 @@ Resources:
                 SASUserPass: !Ref SASUserPass
                 SASAdminPass: !Ref SASAdminPass
                 RAIDScript: !Sub ${QSS3BucketName}/${QSS3KeyPrefix}scripts/disks_ephemeral.sh
+
+            /home/ec2-user/deployment-scripts/addaccess.sh:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}scripts/addaccess.sh
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+              mode: '000500'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+              context:
+                StackName: !Ref AWS::StackName
+                AWSRegion: !Ref AWS::Region
 
             /tmp/ansible.cfg:
               source: !Sub
