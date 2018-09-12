@@ -585,7 +585,7 @@ if [ "{{ViyaVersion}}" = "3.4" ]; then
    #
    # Lock the VIRK commitId to the specific commitId used for testing the production Viya 3.4 Quickstart Deployment
    #
-   VIRK_COMMIT_ID=ee1e6f9
+   VIRK_COMMIT_ID=fec76e556
 else
    curl -Os https://support.sas.com/installation/viya/sas-orchestration-cli/lax/sas-orchestration.tgz 2>> "$CMDLOG"
    tar xf sas-orchestration.tgz 2>> "$CMDLOG"
@@ -628,7 +628,7 @@ pushd sas_viya_playbook
   git clone -q https://github.com/sassoftware/virk.git 2>> "$CMDLOG"
 
   pushd virk
-    git checkout "$VIRK_COMMIT_ID" 2>> "$CMDLOG"
+    git checkout "$VIRK_COMMIT_ID" -b workbranch 2>> "$CMDLOG"
   popd
   ansible-playbook virk/playbooks/pre-install-playbook/viya_pre_install_playbook.yml --skip-tags skipmemfail,skipcoresfail,skipstoragefail,skipnicssfail,bandwidth -e 'use_pause=false'
 

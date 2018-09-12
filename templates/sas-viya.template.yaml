@@ -1537,6 +1537,8 @@ Resources:
                   - 'ec2:DescribeAddresses'
                   - 'ec2:DescribeInstances'
                   - 'ec2:RunInstances'
+                  - 'ec2:StopInstances'
+                  - 'ec2:StartInstances'
                   - 'ec2:AttachVolume'
                   - 'ec2:CreateTags'
                   - 'ec2:AuthorizeSecurityGroupIngress'
@@ -1775,6 +1777,35 @@ Resources:
               authentication: S3AccessCreds
               context:
                 StackName: !Ref AWS::StackName
+                AWSRegion: !Ref AWS::Region
+
+            /home/ec2-user/deployment-scripts/stop_viya_vms.sh:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}scripts/stop_viya_vms.sh
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+              mode: '000500'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+              context:
+                CloudFormationStack: !Ref AWS::StackName
+                AWSRegion: !Ref AWS::Region
+            /home/ec2-user/deployment-scripts/start_viya_vms.sh:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}scripts/start_viya_vms.sh
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+              mode: '000500'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+              context:
+                CloudFormationStack: !Ref AWS::StackName
                 AWSRegion: !Ref AWS::Region
 
             /tmp/ansible.cfg:
