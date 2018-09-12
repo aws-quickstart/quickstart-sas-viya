@@ -406,7 +406,7 @@ Resources:
             with io.BytesIO(obj["Body"].read()) as tf:
               tf.seek(0)
               rD['ViyaVersion'] = '3.3'
-              rD['SASHomePath'] = '/SASHome'
+              rD['SASDrivePath'] = '/SASHome'
               rD['SASStudioPath'] = '/SASStudio'
               with zipfile.ZipFile(tf, mode='r') as zipf:
                 for file in zipf.infolist():
@@ -414,7 +414,7 @@ Resources:
                     templicensefile = zipf.extract(file,'/tmp')
                   if (file.filename.endswith('.jwt')):
                     rD['ViyaVersion'] = '3.4'
-                    rD['SASHomePath'] = '/SASDrive'
+                    rD['SASDrivePath'] = '/SASDrive'
                     rD['SASStudioPath'] = '/SASStudioV'
               tline = ''
               lf = []
@@ -1884,7 +1884,7 @@ Resources:
             cfn-signal -e $? --stack ${AWS::StackName} --resource AnsibleController --region ${AWS::Region}
 
 Outputs:
-  SASHome:
+  SASDrive:
     Description: SAS Viya launch page for SAS solutions and SAS Environment Manager
     Value: !Join
       - ''
@@ -1895,7 +1895,7 @@ Outputs:
           - !GetAtt
             - ElasticLoadBalancer
             - DNSName
-        - !GetAtt LicenseInfo.SASHomePath
+        - !GetAtt LicenseInfo.SASDrivePath
   SASStudio:
     Description: SAS Studio
     Value: !Join
