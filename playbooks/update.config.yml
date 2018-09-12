@@ -3,10 +3,8 @@
 
 ---
 - hosts: localhost
-  
-  vars:
+  gather_facts: False
 
-    
   tasks:
 
   - name: change cas cache location
@@ -89,30 +87,26 @@
     replace:
       dest: vars.yml
       regexp:  '\ \ deployTarget'
-      replace: '  stateful'
+      replace: '  {{ groups["PostgresPrimaryServer"]|first }}'
       backup: yes
 
   - name: add additional pg hosts
     blockinfile:
       dest: vars.yml
-      marker: '# {mark} add additional pg hosts'
+      marker: '# {mark} add additional pg hosts {{ item.1 }}'
       insertafter: '^INVOCATION_VARIABLES:'
       block: |2
-          prog:
+          {{ item.1 }}:
             sasdatasvrc:
-            - NODE_NUMBER: '1'
+            - NODE_NUMBER: '{{ item.0 + 1 |int }}'
               NODE_TYPE: S
               PG_PORT: '5432'
               SANMOUNT: '{{ SAS_CONFIG_ROOT }}/data/sasdatasvrc'
               SERVICE_NAME: postgres
-          visual:
-            sasdatasvrc:
-            - NODE_NUMBER: '2'
-              NODE_TYPE: S
-              PG_PORT: '5432'
-              SANMOUNT: '{{ SAS_CONFIG_ROOT }}/data/sasdatasvrc'
-              SERVICE_NAME: postgres
-
+    when: DeploymentSize == 'medium'
+    with_indexed_items:
+      - "{{ groups['VisualServicesServers']|unique }}"
+      - "{{ groups['ProgrammingServicesServers']|unique }}"
 
   - name: Create sitedefault file, if it doesnt exist already
     file:
@@ -170,7 +164,7 @@
       marker: '# {mark} set sasboot pw'
       insertafter: 'application:'
       block: |2
-                 sas.logon.initial.password: '{{sasboot_pw | b64decode }}'
+                 sas.logon.initial.password: '{{ sasboot_pw | b64decode }}'
 
   - name: set sitedefault permissions
     file:

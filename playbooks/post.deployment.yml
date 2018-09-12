@@ -1,6 +1,6 @@
 ---
 
-- hosts: controller
+- hosts: [CASControllerServer]
   become: yes
   become_user: sas
 
@@ -23,7 +23,7 @@
       - cas
 
 
-- hosts: stateful
+- hosts: [shared-vault-server]
   become: yes
   become_user: root
 
@@ -57,5 +57,4 @@
       chown sas:sas /backups
     tags:
       - backups
-
 
