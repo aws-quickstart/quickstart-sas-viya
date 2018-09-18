@@ -84,7 +84,7 @@ create_success_message () {
 
    SAS Viya Deployment for Stack "{{CloudFormationStack}}" completed successfully.
 
-   Log into SAS Viya at $SASHome
+   Log into SAS Viya at $SASDrive
 
    Log into SAS Studio at $SASStudio
 
@@ -513,14 +513,14 @@ else
 fi
 
 #
-# set the SASHome and SASStudio urls
+# set the SASDrive and SASStudio urls
 #
 PROTOCOL="https://"
 if [ "{{ViyaVersion}}" = "3.4" ];then
-    SASHome="${PROTOCOL}${DomainName}/SASDrive"
+    SASDrive="${PROTOCOL}${DomainName}/SASDrive"
     SASStudio="${PROTOCOL}${DomainName}/SASStudioV"
 else
-    SASHome="${PROTOCOL}${DomainName}/SASHome"
+    SASDrive="${PROTOCOL}${DomainName}/SASHome"
     SASStudio="${PROTOCOL}${DomainName}/SASStudio"
 fi
 
