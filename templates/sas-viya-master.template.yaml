@@ -31,7 +31,7 @@ Metadata:
         - AWSHostedZoneID
         - SSLCertificateARN
     - Label:
-        default: AWS Quick Start Source Location
+        default: AWS Quick Start Configuration
       Parameters:
         - QSS3BucketName
         - QSS3KeyPrefix
