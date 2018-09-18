@@ -538,8 +538,7 @@ echo "$(date) Start Pre-Deployment tasks (see deployment-pre.log)" >> "$CMDLOG"
 export ANSIBLE_LOG_PATH="$LOGDIR/deployment-pre.log"
 
 # set hostnames, mount drives
-ansible-playbook /tmp/ansible.pre.deployment.yml -e "CloudWatchLogGroup='{{LogGroup}}'" \
-                                          -e "AWSRegion='{{AWSRegion}}'" \
+ansible-playbook /tmp/ansible.pre.deployment.yml -e "AWSRegion='{{AWSRegion}}'" \
                                           -e "RAIDScript='{{RAIDScript}}'" \
                                           -e "CloudFormationStack='{{CloudFormationStack}}'" \
                                           -i /tmp/inventory.head
@@ -668,8 +667,7 @@ pushd sas_viya_playbook
   export ANSIBLE_LOG_PATH="$LOGDIR/deployment-post.log"
 
   ansible-playbook ansible.post.deployment.yml  -e "cas_virtual_host='$DomainName'" \
-                                                -e "CloudWatchLogGroup='{{LogGroup}}'" \
                                                 -e "AWSRegion='{{AWSRegion}}'" \
-                                                --tags "backups, cas, cloudwatch"
+                                                --tags "backups, cas"
 
 popd
