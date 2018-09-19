@@ -201,7 +201,7 @@ Parameters:
   OperatorEmail:
     AllowedPattern: "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)|^$"
     ConstraintDescription: must be a valid email address.
-    Description: Email address to send a notification about deployment success or failure (optional).
+    Description: (Optional) Email address to send a notification about deployment success or failure.
     Type: String
     Default: ''
 
