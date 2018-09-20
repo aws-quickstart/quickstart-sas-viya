@@ -36,7 +36,7 @@ while [ "$STATUS" = "" ]; do
 
    # make sure sshd is up on each VM
    for ID in ${IDs[@]}; do
-      IP=$(aws ec2 --region us-east-1 describe-instances --instance-id $ID --query Reservations[*].Instances[*].PrivateIpAddress --output text)
+      IP=$(aws ec2 --region {{AWSRegion}} describe-instances --instance-id $ID --query Reservations[*].Instances[*].PrivateIpAddress --output text)
       RC=-1
       until [ $RC = 0 ]; do
         sleep 3
