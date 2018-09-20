@@ -404,6 +404,7 @@ Resources:
           FAILED = "FAILED"
           rD = {}
           rS = FAILED
+          reason = ""
           s3 = boto3.client('s3')
           def license(event, context):
             rD["s3_mirror_bucket"] = ''
@@ -468,18 +469,17 @@ Resources:
             rD["CASLibSize"] = 500
             rD["NodeInstanceSize"] = "2xlarge"
             rD["CASCacheSize"] = 180
-            if cpucount == 4:
+            if cpucount <= 4:
               pass
             elif cpucount <= 8:
               rD["NodeInstanceSize"] = "4xlarge"
               rD["CASCacheSize"] = 360
-            elif cpucount <= 16:
+            else:
+              rD['CPUCount'] = 16
               rD["NodeInstanceSize"] = "8xlarge"
               rD["CASLibSize"] = 1000
               rD["CASCacheSize"] = 720
-            else:
-              rS = FAILED
-              print("Invalid Licensed CPU Count: {0}".format(cpucount))
+
             send(event, context, rS, rD)
           def send(event, context, rS, rD, reason="", physicalResourceId=None, noEcho=False):
             responseUrl = event['ResponseURL']
