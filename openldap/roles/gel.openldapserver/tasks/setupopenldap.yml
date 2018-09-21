@@ -3,9 +3,19 @@
   yum: 
     pkg: "{{ item }}"
     state: present
+    update_cache: yes
   with_items:
      - openldap-servers
      - openldap-clients
+
+- name: force a re-install (needed in some cases)
+  become: yes
+  shell: |
+    yum-complete-transaction
+    yum -y reinstall openldap-servers
+  ignore_errors: yes
+  register: yumreinstall
+- debug: var=yumreinstall
 
 - name: encrypt the admin password
   shell: "slappasswd -s '{{OLCROOTPW | b64decode }}'"
@@ -15,7 +25,6 @@
   shell: "slappasswd -s '{{OLCUSERPW | b64decode }}'"
   register: OLCUSERPW_ENC
 
-
 - name: copy db_config
   shell: cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
   args:
@@ -24,7 +33,13 @@
 - name: apply permissions
   shell: chown -R ldap:ldap /var/lib/ldap
 
-
+- name: edit config.ldif
+  lineinfile:
+    dest: /etc/openldap/slapd.d/cn=config.ldif
+    regexp: "^olcTLS.*"
+    state: absent
+    backup: yes
+    
 - name: edit hdb.ldif
   lineinfile: 
     dest: /etc/openldap/slapd.d/cn=config/olcDatabase={2}hdb.ldif
