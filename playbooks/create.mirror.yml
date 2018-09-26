@@ -2,7 +2,7 @@
 ## this will install the sas repository mirror on the stateful host
 
 ---
-- hosts: stateful
+- hosts: [MirrorServer]
   become: yes
   become_user: root
   

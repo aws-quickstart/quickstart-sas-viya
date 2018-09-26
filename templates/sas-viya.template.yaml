@@ -21,6 +21,7 @@ Metadata:
           - SASAdminPass
           - SASUserPass
           - CASInstanceType
+#          - DeploymentSize
           - DeploymentMirror
           - OperatorEmail
       - Label:
@@ -56,6 +57,8 @@ Metadata:
         default: SAS Viya Software Order File
       CASInstanceType:
         default: EC2 Instance Type for the CAS compute VM
+#      DeploymentSize:
+#        default: Topology Size (small or medium)
       VPCID:
         default: VPC ID
       AdminIngressLocation:
@@ -97,6 +100,14 @@ Parameters:
     Description: Type of EC2 instance for the Viya Compute Nodes (i3 for performance, r4 for auto-recovery)
     Type: String
 
+#  DeploymentSize:
+#    AllowedValues:
+#      - "small"
+#      - "medium"
+#    ConstraintDescription: Must contain either "small" or "medium"
+#    Default: "small"
+#    Description: Determines size and number of VMs used for the Viya Services
+#    Type: String
 
 
   KeyPairName:
@@ -346,6 +357,14 @@ Conditions:
     Fn::Not:
     - Condition: IsI3
 
+  IsSmall: !Equals
+    - medium
+    - small
+
+  IsMedium: !Equals
+    - medium
+    - medium
+
   NoDNSEntry:
     Fn::Or:
     - Fn::Equals:
@@ -446,9 +465,7 @@ Resources:
               rD['CPUCount'] = cpucount
               rS = SUCCESS
 
-            rD["NumWorkers"] = 0
             rD["CASLibSize"] = 500
-            rD["UserLibSize"] = 500
             rD["NodeInstanceSize"] = "2xlarge"
             rD["CASCacheSize"] = 180
             if cpucount == 4:
@@ -459,7 +476,6 @@ Resources:
             elif cpucount <= 16:
               rD["NodeInstanceSize"] = "8xlarge"
               rD["CASLibSize"] = 1000
-              rD["UserLibSize"] = 1000
               rD["CASCacheSize"] = 720
             else:
               rS = FAILED
@@ -743,7 +759,31 @@ Resources:
     Properties:
       RetentionInDays: 7
 
+  RecoveryAlarmServices:
+    Condition: IsSmall
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Trigger a recovery when instance status check fails more than once in 2 minutes.
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '2'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: '1'
+      AlarmActions:
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
+        - !If
+          - SNSCondition
+          - !Ref SNSTopic
+          - !Ref AWS::NoValue
+      Dimensions:
+      - Name: InstanceId
+        Value:
+          Ref: ViyaServices
+
   RecoveryAlarmVisual:
+    Condition: IsMedium
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Trigger a recovery when instance status check fails more than once in 2 minutes.
@@ -766,6 +806,7 @@ Resources:
           Ref: VisualServices
 
   RecoveryAlarmStateful:
+    Condition: IsMedium
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Trigger a recovery when instance status check fails more than once in 2 minutes.
@@ -788,6 +829,7 @@ Resources:
           Ref: StatefulServices
 
   RecoveryAlarmProgramming:
+    Condition: IsMedium
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Trigger a recovery when instance status check fails more than once in 2 minutes.
@@ -952,10 +994,7 @@ Resources:
         UnhealthyThreshold: '3'
         Interval: '30'
         Timeout: '3'
-      Instances:
-        - !Ref StatefulServices
-        - !Ref VisualServices
-        - !Ref ProgrammingServices
+
 
   DNSNameEntry:
     Type: AWS::Route53::RecordSet
@@ -1034,26 +1073,6 @@ Resources:
                 Resource: "*"
                 Effect: Allow
           PolicyName: viya-services-ec2-policy
-#        - PolicyDocument:
-#            Version: 2012-10-17
-#            Statement:
-#              - Action:
-#                  - 'logs:CreateLogStream'
-#                  - 'logs:GetLogEvents'
-#                  - 'logs:PutLogEvents'
-#                  - 'logs:DescribeLogGroups'
-#                  - 'logs:DescribeLogStreams'
-#                  - 'logs:PutRetentionPolicy'
-#                  - 'logs:PutMetricFilter'
-#                  - 'logs:CreateLogGroup'
-#                Resource: !Sub
-#                  - arn:${Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogGroup}:*
-#                  - Partition: !If
-#                      - GovCloudCondition
-#                      - aws-us-gov
-#                      - aws
-#                Effect: Allow
-#          PolicyName: viya-services-cloudwatch-logs-policy
   ViyaProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -1062,6 +1081,7 @@ Resources:
         - !Ref ViyaRole
 
   VisualServices:
+    Condition: IsMedium
     Type: AWS::EC2::Instance
     CreationPolicy:
       ResourceSignal:
@@ -1143,6 +1163,7 @@ Resources:
             # Signal the status from cfn-init
             cfn-signal -e $? --stack ${AWS::StackName} --resource VisualServices --region ${AWS::Region}
   ProgrammingServices:
+    Condition: IsMedium
     Type: AWS::EC2::Instance
     CreationPolicy:
       ResourceSignal:
@@ -1225,6 +1246,7 @@ Resources:
             cfn-signal -e $? --stack ${AWS::StackName} --resource ProgrammingServices --region ${AWS::Region}
 
   StatefulServices:
+    Condition: IsMedium
     Type: AWS::EC2::Instance
     CreationPolicy:
       ResourceSignal:
@@ -1306,6 +1328,88 @@ Resources:
             cfn-signal -e $? --stack ${AWS::StackName} --resource StatefulServices --region ${AWS::Region}
 
 
+  ViyaServices:
+    Condition: IsSmall
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: 'PT10M'
+    Metadata:
+      'AWS::CloudFormation::Authentication':
+        S3AccessCreds:
+          type: S3
+          roleName: !Ref ViyaRole
+          buckets:
+            - !Ref QSS3BucketName
+      'AWS::CloudFormation::Init':
+        configSets:
+          quickstart:
+            - install
+        install:
+          commands:
+            01-getkey:
+              command:
+                Fn::Sub: |
+                  #!/bin/bash
+                  KEY=dummy
+                  # wait until the key is available (the ansible controller puts it there)
+                  TRIES=0
+                  until [[ ! "$KEY" = "dummy" || $TRIES -gt 10 ]]; do
+                     KEY=$(aws ssm get-parameter --region "${AWS::Region}" --name "viya-ansiblekey-${AWS::StackName}" --query Parameter.Value --output text)
+                     if [[ $KEY = *"error"* ]]; then
+                        sleep 5
+                        let TRIES++
+                     else
+                        sleep 1
+                     fi
+                  done
+                  if [[ $TRIES -gt 10 ]]; then
+                     echo "Error - could not obtain key from ssm."
+                     exit 1
+                  fi
+                  echo "$KEY" | su ec2-user bash -c 'tee -a ~/.ssh/authorized_keys'
+
+    Properties:
+      KeyName: !Ref KeyPairName
+      ImageId: !FindInMap
+        - AWSAMIRegionMap
+        - !Ref AWS::Region
+        - RHEL74HVM
+      SubnetId: !Ref PrivateSubnetID
+      IamInstanceProfile: !Ref ViyaProfile
+      InstanceType: r4.2xlarge
+      EbsOptimized: true
+      PlacementGroupName: !Ref ViyaPlacementGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: '20'
+            VolumeType: gp2
+            DeleteOnTermination: true
+        - DeviceName: /dev/sdg
+          Ebs:
+            VolumeSize: '100'
+            VolumeType: gp2
+            DeleteOnTermination: true
+            Encrypted: true
+      SecurityGroupIds:
+        - !Ref ProxySecurityGroup
+        - !Ref ViyaSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName} Viya Services"
+      UserData:
+        Fn::Base64:
+          Fn::Sub: |
+            #!/bin/bash
+            export PATH=$PATH:/usr/local/bin
+            curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py &> /dev/null
+            pip install awscli --ignore-installed six &> /dev/null
+            easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+            cfn-init --stack ${AWS::StackName} --resource ViyaServices --configsets quickstart --region ${AWS::Region}
+            # Signal the status from cfn-init
+            cfn-signal -e $? --stack ${AWS::StackName} --resource ViyaServices --region ${AWS::Region}
 
   CASController:
     Type: AWS::EC2::Instance
@@ -1547,6 +1651,7 @@ Resources:
                   - 'elasticloadbalancing:DeleteLoadBalancerListeners'
                   - 'elasticloadbalancing:CreateLoadBalancerListeners'
                   - 'elasticloadbalancing:SetLoadBalancerPoliciesOfListener'
+                  - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
                 Resource:
                   - '*'
                 Effect: Allow
@@ -1705,7 +1810,6 @@ Resources:
                 AWSRegion: !Ref AWS::Region
                 KeyPairName: !Ref KeyPairName
                 AnsibleControllerIP: !Ref AnsibleControllerEIP
-                NumWorkers: !GetAtt LicenseInfo.NumWorkers
                 CloudFormationStack: !Ref AWS::StackName
                 CloudWatchLogs: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=${CloudWatchLogGroup}"
                 SSLCertificateARN: !Ref SSLCertificateARN
@@ -1716,6 +1820,7 @@ Resources:
                 RAIDScript: !Sub ${QSS3BucketName}/${QSS3KeyPrefix}scripts/disks_ephemeral.sh
                 DeploymentMirror: !Ref DeploymentMirror
                 ViyaVersion: !GetAtt LicenseInfo.ViyaVersion
+                DeploymentSize: medium
 
             /home/ec2-user/deployment-scripts/create.mirror.yml:
               source: !Sub
@@ -1831,6 +1936,19 @@ Resources:
               owner: ec2-user
               group: ec2-user
               authentication: S3AccessCreds
+            /tmp/inventory.pre:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}playbooks/inventory.medium.pre
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+                  ViyaVersion: !GetAtt LicenseInfo.ViyaVersion
+              mode: '000444'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+
             /tmp/ansible.pre.deployment.yml:
               source: !Sub
                 - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}playbooks/pre.deployment.yml
@@ -1864,6 +1982,7 @@ Resources:
               owner: ec2-user
               group: ec2-user
               authentication: S3AccessCreds
+
             /tmp/openldapfiles.txt:
               source: !Sub
                 - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}openldap/files.txt

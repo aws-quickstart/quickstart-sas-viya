@@ -1,11 +1,11 @@
 --- 
 - hosts: localhost
-    
+  gather_facts: False
+
   tasks:
 
   - name: create new inventory
     shell: cat /tmp/inventory.head inventory.body > inventory.ini
-
 
   - name: Set OpenLdapServer
     blockinfile:
@@ -13,7 +13,7 @@
       marker: "# {mark} ADD SERVER"
       insertafter: '\[openldapserver\]'
       content: |
-        stateful
+        "{{ groups["OpenLdapServer"]|unique|join("\n") }}"
     tags:
       - updateinventory
 

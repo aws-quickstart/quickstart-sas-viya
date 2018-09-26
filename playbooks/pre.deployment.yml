@@ -32,7 +32,7 @@
 
 
 
-- hosts: prog
+- hosts: [ProgrammingServicesServers]
   become: yes
   become_user: root
 
@@ -45,7 +45,8 @@
       mode: 0777
 
 
-- hosts: controller
+- hosts: [CASControllerServer]
+
   become: yes
   become_user: root
 

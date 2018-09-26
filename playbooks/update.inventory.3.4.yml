@@ -1,5 +1,6 @@
 ---
 - hosts: localhost
+  gather_facts: False
 
   tasks:
 
@@ -22,73 +23,73 @@
     replace:
       dest=inventory.ini
       regexp='^\[ComputeServer\]\ndeployTarget'
-      replace='[ComputeServer]\nprog'
+      replace="[ComputeServer]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}"
 
   - name: Programming - programming
     replace:
       dest=inventory.ini
       regexp='^\[programming\]\ndeployTarget'
-      replace='[programming]\nprog'
+      replace='[programming]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - spre
     replace:
       dest=inventory.ini
       regexp='^\[spre\]\ndeployTarget'
-      replace='[spre]\nprog'
+      replace='[spre]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - CommandLine
     replace:
       dest=inventory.ini
       regexp='^\[CommandLine\]\ndeployTarget'
-      replace='[CommandLine]\nvisual\nstateful\nprog\ncontroller'
+      replace='[CommandLine]\n{{ groups["sas-servers"]|unique|join("\n") }}'
 
   - name: Programming - connect
     replace:
       dest=inventory.ini
       regexp='^\[connect\]\ndeployTarget'
-      replace='[connect]\nprog'
+      replace='[connect]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - pcfile
     replace:
       dest=inventory.ini
       regexp='^\[pcfile\]\ndeployTarget'
-      replace='[pcfile]\nprog'
+      replace='[pcfile]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - platform
     replace:
       dest=inventory.ini
       regexp='^\[platform\]\ndeployTarget'
-      replace='[platform]\nprog'
+      replace='[platform]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - Operations
     replace:
       dest=inventory.ini
       regexp='^\[Operations\]\ndeployTarget'
-      replace='[Operations]\nprog'
+      replace='[Operations]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - psqllib
     replace:
       dest=inventory.ini
       regexp='^\[psqllib\]\ndeployTarget'
-      replace='[psqllib]\nprog'
+      replace='[psqllib]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - psqllib1
     replace:
       dest=inventory.ini
       regexp='^\[psqllib1\]\ndeployTarget'
-      replace='[psqllib1]\nprog'
+      replace='[psqllib1]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - psqlodbc
     replace:
       dest=inventory.ini
       regexp='^\[psqlodbc\]\ndeployTarget'
-      replace='[psqlodbc]\nprog'
+      replace='[psqlodbc]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
   - name: Programming - psqlodbc1
     replace:
       dest=inventory.ini
       regexp='^\[psqlodbc1\]\ndeployTarget'
-      replace='[psqlodbc1]\nprog'
+      replace='[psqlodbc1]\n{{ groups["ProgrammingServicesServers"]|unique|join("\n") }}'
 
 
   # Stateful Services
@@ -96,45 +97,45 @@
     replace:
       dest=inventory.ini
       regexp='^\[configuratn]\\ndeployTarget'
-      replace='[configuratn]\nstateful'
+      replace='[configuratn]\n{{ groups["StatefulServicesServers"]|unique|join("\n") }}'
 
   - name: Stateful -pgpoolc
     replace:
       dest=inventory.ini
       regexp='^\[pgpoolc\]\ndeployTarget'
-      replace='[pgpoolc]\nstateful'
+      replace='[pgpoolc]\n{{ groups["StatefulServicesServers"]|unique|join("\n") }}'
 
   - name: Stateful -rabbitmq
     replace:
       dest=inventory.ini
       regexp='^\[rabbitmq\]\ndeployTarget'
-      replace='[rabbitmq]\nstateful'
+      replace='[rabbitmq]\n{{ groups["StatefulServicesServers"]|unique|join("\n") }}'
 
   - name: Stateful -sasdatasvrc
     replace:
       dest=inventory.ini
       regexp='^\[sasdatasvrc\]\ndeployTarget'
-      replace='[sasdatasvrc]\nstateful\nprog\nvisual'
+      replace='[sasdatasvrc]\n{{ groups["sas-services"]|unique|join("\n") }}'
 
   # multiple
   - name: Multiple - CoreServices
     replace:
       dest=inventory.ini
       regexp='^\[CoreServices\]\ndeployTarget'
-      replace='[CoreServices]\nstateful\nprog\nvisual'
+      replace='[CoreServices]\n{{ groups["sas-services"]|unique|join("\n") }}'
 
   - name: Multiple - Consul
     replace:
       dest=inventory.ini
       regexp='^\[Consul\]\ndeployTarget'
-      replace='[Consul]\nstateful\nprog\nvisual'
+      replace='[Consul]\n{{ groups["sas-services"]|unique|join("\n") }}'
 
 
   - name: Multiple - httpproxy
     replace:
       dest=inventory.ini
       regexp='^\[httpproxy\]\ndeployTarget'
-      replace='[httpproxy]\nstateful\nprog\nvisual'
+      replace='[httpproxy]\n{{ groups["sas-services"]|unique|join("\n") }}'
 
   # CAS
   - name: Set CAS controller target
@@ -143,22 +144,13 @@
       regexp='^\[sas-casserver-primary\]\ndeployTarget'
       replace='[sas-casserver-primary]\ncontroller'
 
-  - name: Prepare CAS Workers list
-    shell: cat /tmp/inventory.head | grep worker | cut -d' ' -f1 > /tmp/inventory.workers
-
-  - name: Set CAS workers
-    blockinfile:
-      dest=inventory.ini
-      insertafter='^\[sas-casserver-worker\]'
-      block="{{ lookup('file', '/tmp/inventory.workers') }}"
-      marker="# {mark} ADD WORKERS"
 
   # Everything else
   - name: All other services
     replace:
       dest=inventory.ini
       regexp='^deployTarget'
-      replace='visual'
+      replace='{{ groups["VisualServicesServers"]|unique|join("\n") }}'
       backup=yes
 
 
