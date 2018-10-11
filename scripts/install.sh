@@ -404,7 +404,7 @@ aws --region "{{AWSRegion}}" ssm put-parameter --name "viya-ansiblekey-{{CloudFo
 #
 echo "Checking Viya VMs" >> "$CMDLOG"
 STATUS="status"
-while ! [ -z "$(echo "$STATUS" | grep -q -v "CREATE_COMPLETE" )" ]; do
+until [ $(echo "$STATUS" | wc -w) = $(echo "$STATUS" | sed 's/CREATE_COMPLETE/CREATE_COMPLETE\n/g' | grep -c "CREATE_COMPLETE") ]; do
   sleep 3
   STATUS=$(aws --no-paginate --region "{{AWSRegion}}" cloudformation describe-stack-resources --stack-name "{{CloudFormationStack}}"  --query 'StackResources[?ResourceType ==`AWS::EC2::Instance`]|[?LogicalResourceId != `AnsibleController`].ResourceStatus' --output text)
   if [ "$(echo "$STATUS" | grep "CREATE_FAILED")" ]; then exit 1; fi
