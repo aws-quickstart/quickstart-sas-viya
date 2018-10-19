@@ -1983,6 +1983,31 @@ Resources:
               group: ec2-user
               authentication: S3AccessCreds
 
+            /home/ec2-user/deployment-scripts/dataagent2dataprep.yml:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}playbooks/dataagent2dataprep.yml
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+              mode: '000444'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+
+            /tmp/ansible.dataprep2dataagent.yml:
+              source: !Sub
+                - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}playbooks/dataprep2dataagent.yml
+                - QSS3Region: !If
+                    - GovCloudCondition
+                    - s3-us-gov-west-1
+                    - s3
+              mode: '000444'
+              owner: ec2-user
+              group: ec2-user
+              authentication: S3AccessCreds
+
+
             /tmp/openldapfiles.txt:
               source: !Sub
                 - https://${QSS3BucketName}.${QSS3Region}.amazonaws.com/${QSS3KeyPrefix}openldap/files.txt
