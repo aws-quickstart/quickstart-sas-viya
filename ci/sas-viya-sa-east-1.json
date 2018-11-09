@@ -5,7 +5,7 @@
     },
     {
         "ParameterKey": "AvailabilityZone",
-        "ParameterValue": "$[alfred_genaz_1]"
+        "ParameterValue": "sa-east-1b"
     },
     {
         "ParameterKey": "DeploymentDataLocation",

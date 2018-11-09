@@ -32,7 +32,7 @@ fi
 
 if ! type -p ansible;  then
    # install Ansible
-   pip install 'ansible==2.4.0'
+   pip install 'ansible==2.4.3'
 fi
 
 if ! type -p git; then

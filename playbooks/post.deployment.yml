@@ -1,6 +1,6 @@
 ---
 
-- hosts: controller
+- hosts: [CASControllerServer]
   become: yes
   become_user: sas
 
@@ -23,7 +23,7 @@
       - cas
 
 
-- hosts: stateful
+- hosts: [shared-vault-server]
   become: yes
   become_user: root
 
@@ -57,123 +57,4 @@
       chown sas:sas /backups
     tags:
       - backups
-
-  - name: get log directories
-    shell: find /opt/sas/viya/config/var/log/* -name default | grep -v '/cas/' | cut -d'/' -f8
-    register: log_dirs
-    tags:
-       - cloudwatch
-
-  - name: initialize cloudwatch configuration file
-    copy:
-      dest: /tmp/cloudwatch.conf
-      content: |
-        [general]
-        use_gzip_http_content_encoding = true
-        queue_size = 10
-    tags:
-      - cloudwatch
-
-  - name: create cloudwatch agent configuration
-    blockinfile:
-      dest: /tmp/cloudwatch.conf
-      marker: '# {mark} set {{item}}'
-      insertafter: 'EOF'
-      block: |
-         [/var/log/sas/viya/{{item}}]
-         file = /opt/sas/viya/config/var/log/{{item}}/default/*
-         log_stream_name = viya-{{item}}-{{inventory_hostname}}.log
-         initial_position = start_of_file
-         log_group_name = {{CloudWatchLogGroup}}
-    with_items: "{{log_dirs.stdout_lines}}"
-    tags:
-      - cloudwatch
-
-- hosts:
-   - visual
-   - prog
-   - stateful
-  become: yes
-  become_user: root
-
-  tasks:
-
-  - name: create cloudwatch agent configuration postgres
-    blockinfile:
-      dest: /tmp/cloudwatch.conf
-      marker: '# {mark} set {{item}}'
-      insertafter: 'EOF'
-      block: |
-         [/var/log/sas/viya/{{item}}]
-         file = /opt/sas/viya/config/var/log/{{item}}/postgres/node*/*
-         log_stream_name = viya-{{item}}-{{inventory_hostname}}.log
-         initial_position = start_of_file
-         log_group_name = {{CloudWatchLogGroup}}
-    with_items: "sasdatasvrc"
-    tags:
-      - cloudwatch
-
-
-- hosts: prog
-  become: yes
-  become_user: root
-
-  tasks:
-
-  - name: create cloudwatch agent configuration workspace/batch server
-    blockinfile:
-      dest: /tmp/cloudwatch.conf
-      marker: '# {mark} set {{item}}'
-      insertafter: 'EOF'
-      block: |
-         [/var/log/sas/viya/{{item}}]
-         file = /opt/sas/viya/config/var/log/{{item}}/default/*
-         log_stream_name = viya-{{item}}-{{inventory_hostname}}.log
-         initial_position = start_of_file
-         log_group_name = {{CloudWatchLogGroup}}
-    with_items:
-      - workspaceserver
-      - batchserver
-    tags:
-      - cloudwatch
-
-
-- hosts: controller
-  become: yes
-  become_user: root
-
-  tasks:
-  - name: add controller cloudwatch agent configuration
-    blockinfile:
-      dest: /tmp/cloudwatch.conf
-      marker: '# {mark} set cas'
-      insertafter: 'EOF'
-      block: |
-         [/var/log/sas/viya/cas]
-         file = /opt/sas/viya/config/var/log/cas/default/cas_*_controller_*.log
-         log_stream_name = viya-cas-{{inventory_hostname}}.log
-         initial_position = start_of_file
-         log_group_name = {{CloudWatchLogGroup}}
-    tags:
-      - cloudwatch
-
-- hosts: sas-all
-  become: yes
-  become_user: root
-
-  tasks:
-
-  - name: start cloudwatch services
-    shell: |
-      curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -o /tmp/awslogs-agent-setup.py
-      python /tmp/awslogs-agent-setup.py --region "{{AWSRegion}}" -n -c /tmp/cloudwatch.conf
-    tags:
-      - cloudwatch
-  # create crontab to make sure the awslog service restarts after each file rollover
-  # (i.e. after midnight, which is the default in the viya log configurations)
-  - name: create cloudwatch crontab restart for log rotation
-    cron: name="restart awslogs" hour="0" minute="15" job="service awslogs restart"
-    tags:
-      - cloudwatch
-
 

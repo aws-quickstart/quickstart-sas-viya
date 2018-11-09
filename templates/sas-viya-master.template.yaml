@@ -22,6 +22,7 @@ Metadata:
         - SASAdminPass
         - SASUserPass
         - CASInstanceType
+#        - DeploymentSize
         - DeploymentMirror
         - OperatorEmail
     - Label:
@@ -31,7 +32,7 @@ Metadata:
         - AWSHostedZoneID
         - SSLCertificateARN
     - Label:
-        default: AWS Quick Start Source Location
+        default: AWS Quick Start Configuration
       Parameters:
         - QSS3BucketName
         - QSS3KeyPrefix
@@ -48,6 +49,8 @@ Metadata:
         default: SAS Viya Software Order File
       CASInstanceType:
         default: EC2 Instance Type for the CAS compute VM
+#      DeploymentSize:
+#        default: Topology Size (small or medium)
       DeploymentMirror:
         default: Mirror of SAS Viya Deployment Data
       AdminIngressLocation:
@@ -79,6 +82,7 @@ Parameters:
     Type: String
     MinLength: '1'
     ConstraintDescription: must be a zip file in a valid S3 bucket location, e.g. mysasbucket/viya_deployment_data/SAS_Viya_deployment_data.zip
+
   CASInstanceType:
     AllowedValues:
       - "i3"
@@ -87,6 +91,15 @@ Parameters:
     Default: "i3"
     Description: Type of EC2 instance for the Viya Compute Nodes (i3 for performance, r4 for auto-recovery)
     Type: String
+
+#  DeploymentSize:
+#    AllowedValues:
+#      - "small"
+#      - "medium"
+#    ConstraintDescription: Must contain either "small" or "medium"
+#    Default: "small"
+#    Description: Determines size and number of VMs used for the Viya Services
+#    Type: String
 
   KeyPairName:
     Description: >-
@@ -173,7 +186,7 @@ Parameters:
   OperatorEmail:
     AllowedPattern: "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)|^$"
     ConstraintDescription: "must be a valid email address."
-    Description: "Email address to send a notification about deployment success or failure (optional)."
+    Description: "(Optional) Email address to send a notification about deployment success or failure."
     Type: String
     Default: ''
 
@@ -358,6 +371,7 @@ Resources:
         DomainName: !Ref DomainName
         AWSHostedZoneID: !Ref AWSHostedZoneID
         CASInstanceType: !Ref CASInstanceType
+#        DeploymentSize: !Ref DeploymentSize
         DeploymentMirror: !Ref DeploymentMirror
 Outputs:
   # Outputs from VPC creation
